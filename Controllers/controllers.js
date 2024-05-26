@@ -3,37 +3,6 @@ const jwt = require("jsonwebtoken");
 const User = require("../Models/UserModel");
 
 
-// const signUp = async (req, res) => {
-//   const { firstname, lastname, email, phoneno, password } = req.body;
-
-//     if (!firstname || !phoneno || !email || !password) {
-//       res.json("Required All Fields");
-//     }
-
-//   const user = await User.findOne({ email });
-
-//   if (user) {
-//     return res.json("User Already Registred");
-//   }
-
-//   try {
-//     const salt = await bcrypt.genSalt(5);
-
-//     const HashedPassword = await bcrypt.hash(password, salt);
-
-//     const createUser = new User({
-//       firstname,
-//       lastname,
-//       email,
-//       phoneno,
-//       password: HashedPassword,
-//     });
-//     await createUser.save();
-//     res.status(201).json({ createUser });
-//   } catch (err) {
-//     res.status(500).json("Internal server Error");
-//   }
-// };
 
 const signUp = async (req, res) => {
   const { firstname, lastname, email, phoneno, password } = req.body;
@@ -96,32 +65,35 @@ const signUp = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-  try {
-    if ((!email, !password)) {
-      res.json("Required All Fields");
-    }
 
+  if (!email || !password) {
+    return res.status(400).json({ error: "Required All Fields" });
+  }
+
+  try {
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-      res.send("user not registred");
+      return res.status(404).json({ error: "User not registered" });
     }
 
-    const PswrdMatch = await bcrypt.compare(password, existingUser.password);
+    const isPasswordMatch = await bcrypt.compare(password, existingUser.password);
 
-    if (PswrdMatch) {
+    if (isPasswordMatch) {
       const token = jwt.sign(
         { firstname: existingUser.firstname, email: existingUser.email },
         process.env.secret_access_token,
         { expiresIn: "1h" }
       );
-      res.json(token);
+      return res.status(200).json({ token });
     } else {
-      res.json("invalid email or password ");
+      return res.status(401).json({ error: "Invalid email or password" });
     }
   } catch (err) {
-    res.json(err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
 
 const user = async(req,res)=>{
   const userId = req.params.id;
@@ -142,4 +114,29 @@ const users = async (req, res) => {
   res.json(allusers);
 };
 
-module.exports = { signUp, login, users,user };
+
+const deleteUserById = async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+const deleteAllUsers = async (req, res) => {
+  try {
+    await User.deleteMany({});
+    res.status(200).json({ message: "All users have been deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+module.exports = { signUp, login, users,user,deleteUserById,deleteAllUsers };
