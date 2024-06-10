@@ -4,22 +4,18 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  lastname: {
-    type: String,
-    required: false,
-  },
+ 
   email: {
     type: String,
     required: true,
   },
-  phoneno: {
-    type: Number,
-    required: true,
-  },
+ 
   password: {
     type: String,
     required: true,
   },
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 });
 
 const User = mongoose.model("User", UserSchema);
